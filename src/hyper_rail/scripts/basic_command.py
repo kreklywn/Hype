@@ -71,16 +71,50 @@ def genericCommand(s: serial.Serial):
     for line in s.readlines():
         print(line)
 
-def continousJog(s: serial.Serial):
-    """Given a number of cycles and 2 positions loop between the move calls until the number of cycles is complete"""
-    num_iterations = int(input("Number of times to loop movement: "))
-    position1 = input("First position (x,y): ").strip().split(",")
-    position2 = input("Second position (x,y): ").strip().split(",")
-    speed = input("Feed rate (mm/min): ")
+def get_status_report(s: serial.Serial):
+        """Request and read a status report from the GRBL driver"""
+        """Format: <Idle,MPos:X,Y,Z,WPos:X,Y,Z>"""
+        s.write("?\n")
 
-    # Add however many jog cycles you want the machine to complete
-    for i in range(num_iterations):
-        s.write(f"G1 X{position2[0]} Y{position2[1]} F{speed}\nG1 X{position1[0]} Y{position1[1]} F{speed}\n")
+        # Remove line endings from response
+        return s.readline().strip()
+    
+def get_position(s: serial.Serial):
+    """Gets the machines current position with configured offsets"""
+    """Format: <Idle,MPos:X,Y,Z,WPos:X,Y,Z>"""
+
+    state = get_status_report(s)
+    # Pulls the X,Y,Z coordinates out of the work position, and converts the values to floats
+    return list(map(float, state.split("WPos:")[1].replace(">", "").split(",")))
+
+def get_machine_state(s: serial.Serial):
+    """Gets the machines current running state"""
+    """Format: <Idle,MPos:X,Y,Z,WPos:X,Y,Z>"""
+    state = get_status_report(s)
+
+    # Get the current running state of the machine and return it
+    return state.split(",")[0].replace("<", "")
+
+def continousJog(s: serial.Serial):
+    """Cycle between 2 points with the second designated by an offset from the first. Loop indefinitely as a new command is issued whenever the machine is in an Idle state"""
+
+    # Get the current machine position
+    initalPosition = get_position(s)
+
+    newX = initalPosition[0] + float(input("X Offset (mm): ").strip()) 
+    newY = initalPosition[1] + float(input("Y Offset (mm): ").strip())
+    speed = input("Feed rate (mm/min): ").strip()
+    
+    # Loop until the loop is interupted
+    try:
+        while True:
+
+            # Issue a new G-code command whenever the machine enters an idle state
+            if "Idle" in get_machine_state(s):
+                s.write(f"G1 X{newX} Y{newY} F{speed}\nG1 X{initalPosition[0]} Y{initalPosition[1]} F{speed}\n")
+            sleep(0.01)
+    except KeyboardInterrupt:
+        print("Halting due to ctrl+c.....")
 
 def menu(s: serial.Serial):
     """Display a menu with options to control the driver board"""
@@ -91,7 +125,8 @@ def menu(s: serial.Serial):
     print("4) Home Machine")
     print("5) List All Commands")
     print("6) Send Other Commands")
-    print("7) Continuous Jog (Drive between 2 points until stopped)\n")
+    print("7) Continuous Jog (Drive between 2 points until stopped)")
+    print("8) Print Current Machine Position\n")
     user_input = input("Current Selection: ").strip()
 
     # Convert the input into actual function mappings
@@ -109,6 +144,9 @@ def menu(s: serial.Serial):
         genericCommand(s)
     elif user_input == "7":
         continousJog(s)
+    elif user_input == "8":
+        pos = get_position(s)
+        print(f"X: {pos[0]}, Y: {pos[1]}, Z: {pos[2]}\n")
 
 if __name__ == "__main__":
     # Create the serial device to communicate over

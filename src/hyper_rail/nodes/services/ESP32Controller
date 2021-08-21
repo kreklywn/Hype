@@ -58,10 +58,6 @@ def on_service_contact(request: GRBLServiceRequest):
         
         # Drive the ESP32 to that position at the specified rate
         return GRBLServiceResponse(SERIAL_DRIVER.jog_machine(values[0], values[1], values[2]))
-
-    # Get the current machine position
-    elif packet_type == 7:
-        return GRBLServiceResponse(SERIAL_DRIVER.get_position())
     
     # Wake-up the machine from sleep
     elif packet_type == 8:
