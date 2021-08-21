@@ -24,11 +24,10 @@ def initiateSerialConnection(s: serial.Serial):
     s.flushInput()
 
 def goToXY(s: serial.Serial):
-    """Go to a specified X Y Coordinate"""
-
     x = input("Input the X Coordinate (mm): ")
     y = input("Input the Y Coordinate (mm): ")
     speed = input("Input the feed rate (mm/min): ")
+    """Go to a specified X Y Coordinate"""   
     s.write(f"$J=X{x} Y{y} F{speed}\n")
     print("GRBL Response: " + s.readline().strip())
 
@@ -72,6 +71,17 @@ def genericCommand(s: serial.Serial):
     for line in s.readlines():
         print(line)
 
+def continousJog(s: serial.Serial):
+    """Given a number of cycles and 2 positions loop between the move calls until the number of cycles is complete"""
+    num_iterations = int(input("Number of times to loop movement: "))
+    position1 = input("First position (x,y): ").strip().split(",")
+    position2 = input("Second position (x,y): ").strip().split(",")
+    speed = input("Feed rate (mm/min): ")
+
+    # Add however many jog cycles you want the machine to complete
+    for i in range(num_iterations):
+        s.write(f"G1 X{position2[0]} Y{position2[1]} F{speed}\nG1 X{position1[0]} Y{position1[1]} F{speed}\n")
+
 def menu(s: serial.Serial):
     """Display a menu with options to control the driver board"""
     print("Welcome to a very basic driver interface for commanding an ESP 32 controller!\n")
@@ -80,7 +90,8 @@ def menu(s: serial.Serial):
     print("3) Send G-Code")
     print("4) Home Machine")
     print("5) List All Commands")
-    print("6) Send Other Commands\n")
+    print("6) Send Other Commands")
+    print("7) Continuous Jog (Drive between 2 points until stopped)\n")
     user_input = input("Current Selection: ").strip()
 
     # Convert the input into actual function mappings
@@ -96,6 +107,8 @@ def menu(s: serial.Serial):
         listCommands(s)
     elif user_input == "6":
         genericCommand(s)
+    elif user_input == "7":
+        continousJog(s)
 
 if __name__ == "__main__":
     # Create the serial device to communicate over
