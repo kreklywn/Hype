@@ -1,6 +1,6 @@
-# ROS - Initial
+# ROS - GRBL Driver
 
-### Initial ROS project setup
+### ROS Implementation of Serial Communication with GRBL
 
 The following should be added to your bash.rc or zsh equivalent
 ```Bash
