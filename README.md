@@ -1,7 +1,7 @@
 # ROS - GRBL Driver
 
 ### ROS Implementation of Serial Communication with GRBL
-
+<br>
 The following should be added to your bash.rc or zsh equivalent
 ```Bash
 # Goes above all other source calls
