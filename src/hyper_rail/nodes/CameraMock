@@ -1,16 +1,31 @@
 #!/usr/bin/env python3
 
 # This can be used for the basis of the camera node. Currently just hosts the
-# camera service.
+# camera service.EReference for micasense api http://micasense.github.io/rededge-api/api/http.html#capture
 
 import rospy
 import time
+import requests
+from requests.exceptions import HTTPError
 
 from hyper_rail.srv import SensorService, SensorServiceRequest, SensorServiceResponse
 
-#Called when service receives new request
+
+HOST = "http://192.168.1.83/"
+# look at micasense api to configure type of capture
+CAPTURE_PARAMS = "/capture?store_capture=true&cache_jpeg=31&cache_raw=31&block=true:"
+
 def receive_command(req: SensorServiceRequest):
     print("* Camera Mock\n * received action:", req.action)
+    try:
+        # capture picture
+        response = requests.get(HOST + CAPTURE_PARAMS, timeout=(1, 3))
+        if response.status_code == 200:
+            print('Success!')
+    except requests.exceptions.RequestException as e:
+            print("Error: " + str(e)) 
+
+    # if success, then store else report error and try again. if still error, give a reason 
     for i in range(3):
         print("sleeping", i)
         time.sleep(1)
