@@ -2,7 +2,7 @@
 # Sends the uuid of the program to be executed
 
 string action           # type of action to be sent this is kind of unnecessary, maybe switch with datapoint id?
-
+string waypoint_info        # this sends camera/sensor info
 ---
 
 string status # Whether or not the data collection was successful

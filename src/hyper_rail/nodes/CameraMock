@@ -2,11 +2,13 @@
 
 # This can be used for the basis of the camera node. Currently just hosts the
 # camera service.EReference for micasense api http://micasense.github.io/rededge-api/api/http.html#capture
-
+# clean up and put more comments
+# TODO- comments, make it so terminal output is cleaner, attach database where needed
 import rospy
 import time
 import requests
 from requests.exceptions import HTTPError
+from communication.micasense_command import store_SD_photos
 
 from hyper_rail.srv import SensorService, SensorServiceRequest, SensorServiceResponse
 
@@ -14,18 +16,53 @@ from hyper_rail.srv import SensorService, SensorServiceRequest, SensorServiceRes
 HOST = "http://192.168.1.83/"
 # look at micasense api to configure type of capture
 CAPTURE_PARAMS = "/capture?store_capture=true&cache_jpeg=31&cache_raw=31&block=true:"
+CONFIG = "/config/"
+PHOTO_PATH = "/home/peter/"
+
+# def store_SD_photos(image_info):
+#     print(image_info)
+    
+#     #add micasense_command.py
+#     #append to filepath
+#     #need to figure out how to orchestrate file situations 
+#     pass
+
+def initiate_config():
+    
+    preview_band = "band1"
+    enabled_bands_raw = "31"
+    enabled_bands_jpeg = "31"
+    raw_format = "TIFF"
+
+    payload = {'preview_band': preview_band,
+     'enabled_bands_raw': enabled_bands_raw,
+     'enabled_bands_jpeg': enabled_bands_jpeg,
+     'raw_format': raw_format}
+
+    # sending post request and saving the response as response object
+    r = requests.post(url = HOST + CONFIG, data = payload, timeout=(1, 3))
+    r.raise_for_status()
+
+
 
 def receive_command(req: SensorServiceRequest):
-    print("* Camera Mock\n * received action:", req.action)
+    #camera_service1
+    print("* Camera Mock\n * received action:" + req.action + " and json data: " + req.waypoint_info)
+    sensor_info = req.waypoint_info
     try:
-        # capture picture
+        # set up camera
+        initiate_config()
+        # capture picture and get request
         response = requests.get(HOST + CAPTURE_PARAMS, timeout=(1, 3))
         if response.status_code == 200:
             print('Success!')
+            store_SD_photos(sensor_info)
+
     except requests.exceptions.RequestException as e:
             print("Error: " + str(e)) 
-
-    # if success, then store else report error and try again. if still error, give a reason 
+    #test
+    store_SD_photos(sensor_info)
+    
     for i in range(3):
         print("sleeping", i)
         time.sleep(1)
@@ -39,7 +76,7 @@ def init_node():
     # Sleep once per second. Just keeping the node alive
     publish_rate = rospy.Rate(1)
 
-    # Service to receive camera commands
+    # Service to receive camera commands && need to figure out how to recieve somesort indication of image. camera_service1
     service = rospy.Service("camera_service", SensorService, handler=receive_command)
 
     # Inform the user that the node and service have been started successfully
